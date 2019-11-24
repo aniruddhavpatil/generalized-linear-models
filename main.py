@@ -4,9 +4,11 @@ import random
 from matplotlib import pyplot as plt
 import time
 
+
 # Reads data from given filename
 def read_data(filename):
     return np.genfromtxt(filename, delimiter=',', dtype='float32')
+
 
 # Dataset class, holds name, data and labels
 class Dataset:
@@ -19,6 +21,7 @@ class Dataset:
 
 def sigmoid(a):
     return 1 / (1 + np.exp(-a))
+
 
 # GLM class, implements a Logistic, Poisson and Ordinal regression
 class GLM:
@@ -71,7 +74,7 @@ class GLM:
     def logistic_prediction(self, phi, w, t):
         y_hat = sigmoid(phi @ w)
         t_hat = np.where(y_hat >= 0.5, 1, 0)
-        return np.sum(t_hat != t)/t.shape[0]
+        return np.sum(t_hat != t) / t.shape[0]
 
     def poisson_updates(self):
         self.y = np.exp(self.phi @ self.w)
@@ -81,7 +84,7 @@ class GLM:
     def poisson_prediction(self, phi, w, t):
         y_hat = np.exp(phi @ w)
         t_hat = np.floor(y_hat)
-        return np.sum(np.abs(t_hat - t))/t.shape[0]
+        return np.sum(np.abs(t_hat - t)) / t.shape[0]
 
     def ordinal_updates(self):
         a = self.phi @ self.w
@@ -104,7 +107,7 @@ class GLM:
         p = np.array([y_hat[:, i] - y_hat[:, i - 1] for i in range(1, y_hat.shape[1])]).T
         t_hat = np.argmax(p, axis=1) + 1
         t_hat = np.reshape(t_hat, (phi.shape[0], 1))
-        return np.sum(np.abs(t_hat - t))/t.shape[0]
+        return np.sum(np.abs(t_hat - t)) / t.shape[0]
 
     # Trains GLM on selected regression
     def train(self):
@@ -145,14 +148,14 @@ class GLM:
                 self.t = np.reshape(data[:n_train, -1], (-1, 1))
                 self.R = np.zeros((self.phi.shape[0], self.phi.shape[0]), dtype='float32')
                 w_map = self.train()
-                count+=self.count
+                count += self.count
                 single_error.append(self.prediction_function(phi_test, w_map, t_test))
             all_error.append(single_error)
         all_error = np.asarray(all_error)
         avg_error = np.mean(all_error, axis=0)
         std_error = np.std(all_error, axis=0)
-        self.err_plot(avg_error,std_error)
-        self.avg_conv = str(count/300)
+        self.err_plot(avg_error, std_error)
+        self.avg_conv = str(count / 300)
 
     # Plotting function
     def err_plot(self, avg_error, std_error):
@@ -172,43 +175,23 @@ class GLM:
         plt.savefig(self.type + '_' + self.dataset.name + '.png')
 
 
+def run_experiment(model, dataset, alpha):
+    D = Dataset(dataset)
+    model = GLM(model, alpha, D)
+    start = time.time()
+    model.evaluate()
+    end = time.time()
+    print(model.type.capitalize() + ' Regression on ' + dataset + ' dataset took ' + str(
+        end - start) + ' seconds and converged in about ' + model.avg_conv + ' iterations')
+
+
 def main():
-
-    A = Dataset('A')
     alpha = 10
-    logistic = GLM('logistic', alpha, A)
-    start = time.time()
-    logistic.evaluate()
-    end = time.time()
-    print('Logistic Regression on A took ' + str(end-start) + ' seconds and converged in about ' + logistic.avg_conv + ' iterations')
-
-    usps = Dataset('usps')
-    logistic = GLM('logistic', alpha, usps)
-    start = time.time()
-    logistic.evaluate()
-    end = time.time()
-    print('Logistic Regression on usps took ' + str(end-start) + ' seconds and converged in about ' + logistic.avg_conv + ' iterations')
-
-    irls = Dataset('irlstest')
-    logistic = GLM('logistic', alpha, irls)
-    start = time.time()
-    logistic.evaluate()
-    end = time.time()
-    print('Logistic Regression on irlstest took ' + str(end-start) + ' seconds and converged in about ' + logistic.avg_conv + ' iterations')
-
-    AP = Dataset('AP')
-    poisson = GLM('poisson', alpha, AP)
-    start = time.time()
-    poisson.evaluate()
-    end = time.time()
-    print('Poisson Regression on AP took ' + str(end-start) + ' seconds and converged in about ' + poisson.avg_conv + ' iterations')
-
-    AO = Dataset('AO')
-    ordinal = GLM('ordinal', alpha, AO)
-    start = time.time()
-    ordinal.evaluate()
-    end = time.time()
-    print('Ordinal Regression on AO took ' + str(end-start) + ' seconds and converged in about ' + ordinal.avg_conv + ' iterations')
+    run_experiment('logistic', 'A', alpha)
+    run_experiment('logistic', 'usps', alpha)
+    run_experiment('logistic', 'irlstest', alpha)
+    run_experiment('poisson', 'AP', alpha)
+    run_experiment('ordinal', 'AO', alpha)
 
 
 if __name__ == '__main__':
