@@ -156,6 +156,7 @@ class GLM:
         all_error = np.asarray(all_error)
         avg_error = np.mean(all_error, axis=0)
         std_error = np.std(all_error, axis=0)
+	std_error /= len(all_error)**0.5
         self.err_plot(avg_error, std_error)
         self.avg_conv = str(count / 300)
 
